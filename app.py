@@ -42,10 +42,13 @@ else:
 def get_db_connection():
     """Cria conexão com o banco de dados"""
     try:
+        print(f"🔍 Tentando conectar com: {DB_CONFIG}")
         conn = psycopg2.connect(**DB_CONFIG)
+        print("✅ Conexão com banco estabelecida")
         return conn
     except Exception as e:
         print(f"❌ Erro ao conectar com banco: {e}")
+        print(f"🔍 Configuração usada: {DB_CONFIG}")
         return None
 
 @app.route('/')
