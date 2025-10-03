@@ -16,13 +16,28 @@ app = Flask(__name__, static_folder='static')
 CORS(app)
 
 # Configuração do banco
-DB_CONFIG = {
-    'host': '192.168.88.189',
-    'port': 5432,
-    'database': 'Tax_Calendar',
-    'user': 'postgres',
-    'password': 'root'
-}
+# Para Railway: usar DATABASE_URL se disponível
+# Para local: usar configurações padrão
+if 'DATABASE_URL' in os.environ:
+    # Railway PostgreSQL
+    import urllib.parse as urlparse
+    url = urlparse.urlparse(os.environ['DATABASE_URL'])
+    DB_CONFIG = {
+        'host': url.hostname,
+        'port': url.port,
+        'database': url.path[1:],
+        'user': url.username,
+        'password': url.password
+    }
+else:
+    # Configuração local
+    DB_CONFIG = {
+        'host': os.environ.get('DB_HOST', '192.168.88.189'),
+        'port': int(os.environ.get('DB_PORT', 5432)),
+        'database': os.environ.get('DB_NAME', 'Tax_Calendar'),
+        'user': os.environ.get('DB_USER', 'postgres'),
+        'password': os.environ.get('DB_PASSWORD', 'root')
+    }
 
 def get_db_connection():
     """Cria conexão com o banco de dados"""
