@@ -28,8 +28,8 @@ Sistema de calendário fiscal para obrigações tributárias dos Estados Unidos,
 
 1. **Clone o repositório**
 ```bash
-git clone https://github.com/seu-usuario/tax-calendar.git
-cd tax-calendar
+git clone https://github.com/wiltonss11/wiltonss11.git
+cd wiltonss11
 ```
 
 2. **Instale as dependências**
@@ -144,8 +144,25 @@ Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalh
 
 Para suporte técnico ou dúvidas:
 - **Email**: suporte@h7advisory.com
-- **GitHub Issues**: [Criar issue](https://github.com/seu-usuario/tax-calendar/issues)
+- **GitHub Issues**: [Criar issue](https://github.com/wiltonss11/wiltonss11/issues)
 
 ---
 
 **Tax Calendar - Profissional** | Desenvolvido com ❤️ pela H7 Advisory
+
+## Hi there 👋
+
+<!--
+**wiltonss11/wiltonss11** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+
+Here are some ideas to get you started:
+
+- 🔭 I'm currently working on Tax Calendar Professional
+- 🌱 I'm currently learning Python, Flask, PostgreSQL
+- 👯 I'm looking to collaborate on web development projects
+- 🤔 I'm looking for help with deployment and optimization
+- 💬 Ask me about tax compliance and web development
+- 📫 How to reach me: [GitHub](https://github.com/wiltonss11)
+- 😄 Pronouns: he/him
+- ⚡ Fun fact: I love building professional web applications!
+-->
