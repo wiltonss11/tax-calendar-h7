@@ -6,8 +6,7 @@ Flask + PostgreSQL + Angular
 
 from flask import Flask, jsonify, request, render_template_string, send_from_directory
 from flask_cors import CORS
-import psycopg2
-from psycopg2.extras import RealDictCursor
+import pymysql
 import json
 from datetime import datetime
 import os
@@ -16,34 +15,40 @@ app = Flask(__name__, static_folder='static')
 CORS(app)
 
 # Configuração do banco
-# Para Railway: usar DATABASE_URL se disponível
-# Para local: usar configurações padrão
-if 'DATABASE_URL' in os.environ:
-    # Railway PostgreSQL
-    import urllib.parse as urlparse
-    url = urlparse.urlparse(os.environ['DATABASE_URL'])
+# Suporta MySQL (Railway) e fallback local
+import urllib.parse as urlparse
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL:
+    url = urlparse.urlparse(DATABASE_URL)
     DB_CONFIG = {
         'host': url.hostname,
-        'port': url.port,
+        'port': url.port or 3306,
         'database': url.path[1:],
         'user': url.username,
         'password': url.password
     }
 else:
-    # Configuração local
     DB_CONFIG = {
-        'host': os.environ.get('DB_HOST', '192.168.88.189'),
-        'port': int(os.environ.get('DB_PORT', 5432)),
-        'database': os.environ.get('DB_NAME', 'Tax_Calendar'),
-        'user': os.environ.get('DB_USER', 'postgres'),
-        'password': os.environ.get('DB_PASSWORD', 'root')
+        'host': os.environ.get('DB_HOST', '127.0.0.1'),
+        'port': int(os.environ.get('DB_PORT', 3306)),
+        'database': os.environ.get('DB_NAME', 'railway'),
+        'user': os.environ.get('DB_USER', 'root'),
+        'password': os.environ.get('DB_PASSWORD', '')
     }
 
 def get_db_connection():
     """Cria conexão com o banco de dados"""
     try:
         print(f"🔍 Tentando conectar com: {DB_CONFIG}")
-        conn = psycopg2.connect(**DB_CONFIG)
+        conn = pymysql.connect(
+            host=DB_CONFIG['host'],
+            port=int(DB_CONFIG['port']),
+            user=DB_CONFIG['user'],
+            password=DB_CONFIG['password'],
+            database=DB_CONFIG['database'],
+            cursorclass=pymysql.cursors.DictCursor,
+            charset='utf8mb4'
+        )
         print("✅ Conexão com banco estabelecida")
         return conn
     except Exception as e:
@@ -1318,7 +1323,7 @@ def get_calendar():
             try:
                 month_num = int(month)
                 # Filtra por mês independente do ano usando EXTRACT
-                where_conditions.append("EXTRACT(MONTH FROM date) = %s")
+                where_conditions.append("MONTH(date) = %s")
                 params.append(month_num)
             except Exception as e:
                 print(f"Erro ao processar month: {e}")
