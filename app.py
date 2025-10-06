@@ -23,7 +23,7 @@ DATABASE_URL = os.environ.get('DATABASE_URL')
 
 # FALLBACK: Se DATABASE_URL não funcionar, usar URL pública diretamente
 print(f"🔍 DATABASE_URL original: {DATABASE_URL}")
-if not DATABASE_URL or 'mysql.railway.internal' in str(DATABASE_URL):
+if not DATABASE_URL or 'mysql.railway.internal' in str(DATABASE_URL) or '${MySQL.MYSQL_PUBLIC_URL}' in str(DATABASE_URL):
     DATABASE_URL = 'mysql://root:kODqKBZBEYeYuYXYzwgVmvzqjGgHaxoE@shinkansen.proxy.rlwy.net:29062/railway'
     print(f"🔄 Usando fallback: {DATABASE_URL}")
 else:
