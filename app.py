@@ -40,30 +40,27 @@ else:
     }
 
 def get_db_connection():
-    """Cria conexão com o banco de dados"""
+    """Cria conexão com o banco de dados MySQL"""
     try:
-        print(f"🔍 Tentando conectar com: {DB_CONFIG}")
+        print(f"🔍 Tentando conectar com MySQL...")
         
-        # Detectar tipo de banco pela URL
+        # Usar DATABASE_URL se disponível
         if 'DATABASE_URL' in os.environ:
             url = os.environ['DATABASE_URL']
-            if 'postgresql://' in url or 'postgres://' in url:
-                # PostgreSQL
-                conn = psycopg2.connect(url)
-                print("✅ Conexão PostgreSQL estabelecida")
-                return conn
-            elif 'mysql://' in url or 'mysql+pymysql://' in url:
-                # MySQL
+            if 'mysql://' in url or 'mysql+pymysql://' in url:
+                # Conectar usando URL completa
+                import urllib.parse as urlparse
+                parsed = urlparse.urlparse(url)
                 conn = pymysql.connect(
-                    host=DB_CONFIG['host'],
-                    port=int(DB_CONFIG['port']),
-                    user=DB_CONFIG['user'],
-                    password=DB_CONFIG['password'],
-                    database=DB_CONFIG['database'],
+                    host=parsed.hostname,
+                    port=parsed.port or 3306,
+                    user=parsed.username,
+                    password=parsed.password,
+                    database=parsed.path[1:],
                     cursorclass=pymysql.cursors.DictCursor,
                     charset='utf8mb4'
                 )
-                print("✅ Conexão MySQL estabelecida")
+                print("✅ Conexão MySQL estabelecida via DATABASE_URL")
                 return conn
         
         # Fallback para configuração manual
@@ -76,10 +73,10 @@ def get_db_connection():
             cursorclass=pymysql.cursors.DictCursor,
             charset='utf8mb4'
         )
-        print("✅ Conexão com banco estabelecida")
+        print("✅ Conexão MySQL estabelecida")
         return conn
     except Exception as e:
-        print(f"❌ Erro ao conectar com banco: {e}")
+        print(f"❌ Erro ao conectar com MySQL: {e}")
         print(f"🔍 Configuração usada: {DB_CONFIG}")
         return None
 
@@ -1028,36 +1025,26 @@ def home():
 def health_check():
     """Health check"""
     try:
-        # Verificar se DATABASE_URL está configurada
-        if 'DATABASE_URL' in os.environ:
-            # Tentar conectar ao banco
-            conn = get_db_connection()
-            if conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) FROM obrigacoes_com_data")
-        result = cursor.fetchone()
-        count = result[0] if result else 0
-                conn.close()
-                return jsonify({
-                    'status': 'healthy',
-                    'database': 'connected',
-                    'message': 'Backend funcionando perfeitamente!',
-                    'obligations_count': count,
-                    'timestamp': datetime.now().isoformat()
-                })
-            else:
-                return jsonify({
-                    'status': 'healthy',
-                    'database': 'not_configured',
-                    'message': 'Aplicação funcionando - banco não configurado ainda',
-                    'timestamp': datetime.now().isoformat()
-                })
+        # Tentar conectar ao MySQL
+        conn = get_db_connection()
+        if conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM obrigacoes_com_data")
+            result = cursor.fetchone()
+            count = result[0] if result else 0
+            conn.close()
+            return jsonify({
+                'status': 'healthy',
+                'database': 'connected',
+                'message': 'Backend funcionando perfeitamente!',
+                'obligations_count': count,
+                'timestamp': datetime.now().isoformat()
+            })
         else:
-            # Sem DATABASE_URL - aplicação básica funcionando
             return jsonify({
                 'status': 'healthy',
                 'database': 'not_configured',
-                'message': 'Aplicação funcionando - aguardando configuração do banco',
+                'message': 'Aplicação funcionando - MySQL não configurado',
                 'timestamp': datetime.now().isoformat()
             })
     except Exception as e:
@@ -1499,10 +1486,10 @@ if __name__ == '__main__':
     # Verificar conexão com banco (não falhar se não conseguir)
     conn = get_db_connection()
     if conn:
-        print("✅ Conexão com banco PostgreSQL OK")
+        print("✅ Conexão com banco MySQL OK")
         conn.close()
     else:
-        print("⚠️ Banco PostgreSQL não configurado - aplicação funcionará sem banco")
+        print("⚠️ Banco MySQL não configurado - aplicação funcionará sem banco")
     
     port = int(os.environ.get('PORT', 5000))
     print(f"🌐 Servidor iniciando em http://0.0.0.0:{port}")
