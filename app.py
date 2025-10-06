@@ -1381,7 +1381,7 @@ def get_calendar():
         print(f"Query: {query}")
         print(f"Params: {params}")
         
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor()
         cursor.execute(query, params)
         
         results = cursor.fetchall()
