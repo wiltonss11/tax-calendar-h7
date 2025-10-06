@@ -7,7 +7,6 @@ Flask + PostgreSQL + Angular
 from flask import Flask, jsonify, request, render_template_string, send_from_directory
 from flask_cors import CORS
 import pymysql
-import psycopg2
 import json
 from datetime import datetime
 import os
