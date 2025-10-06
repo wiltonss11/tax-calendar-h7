@@ -1025,28 +1025,22 @@ def home():
 def health_check():
     """Health check"""
     try:
-        # Tentar conectar ao MySQL
-        conn = get_db_connection()
-        if conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT COUNT(*) FROM obrigacoes_com_data")
-            result = cursor.fetchone()
-            count = result[0] if result else 0
-            conn.close()
-            return jsonify({
-                'status': 'healthy',
-                'database': 'connected',
-                'message': 'Backend funcionando perfeitamente!',
-                'obligations_count': count,
-                'timestamp': datetime.now().isoformat()
-            })
-        else:
-            return jsonify({
-                'status': 'healthy',
-                'database': 'not_configured',
-                'message': 'Aplicação funcionando - MySQL não configurado',
-                'timestamp': datetime.now().isoformat()
-            })
+        # Healthcheck rápido e resiliente para o Railway
+        db_status = 'disconnected'
+        try:
+            conn = get_db_connection()
+            if conn:
+                db_status = 'connected'
+                conn.close()
+        except Exception:
+            db_status = 'disconnected'
+
+        return jsonify({
+            'status': 'healthy',
+            'database': db_status,
+            'message': 'Backend OK',
+            'timestamp': datetime.now().isoformat()
+        })
     except Exception as e:
         # Mesmo com erro, retornar healthy para permitir deploy
         return jsonify({
