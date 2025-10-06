@@ -7,10 +7,13 @@ Flask + PostgreSQL + Angular
 from flask import Flask, jsonify, request, render_template_string, send_from_directory
 from flask_cors import CORS
 import pymysql
+import psycopg2
 import json
 from datetime import datetime
 import os
+from dotenv import load_dotenv
 
+load_dotenv()
 app = Flask(__name__, static_folder='static')
 CORS(app)
 
@@ -40,6 +43,30 @@ def get_db_connection():
     """Cria conexão com o banco de dados"""
     try:
         print(f"🔍 Tentando conectar com: {DB_CONFIG}")
+        
+        # Detectar tipo de banco pela URL
+        if 'DATABASE_URL' in os.environ:
+            url = os.environ['DATABASE_URL']
+            if 'postgresql://' in url or 'postgres://' in url:
+                # PostgreSQL
+                conn = psycopg2.connect(url)
+                print("✅ Conexão PostgreSQL estabelecida")
+                return conn
+            elif 'mysql://' in url or 'mysql+pymysql://' in url:
+                # MySQL
+                conn = pymysql.connect(
+                    host=DB_CONFIG['host'],
+                    port=int(DB_CONFIG['port']),
+                    user=DB_CONFIG['user'],
+                    password=DB_CONFIG['password'],
+                    database=DB_CONFIG['database'],
+                    cursorclass=pymysql.cursors.DictCursor,
+                    charset='utf8mb4'
+                )
+                print("✅ Conexão MySQL estabelecida")
+                return conn
+        
+        # Fallback para configuração manual
         conn = pymysql.connect(
             host=DB_CONFIG['host'],
             port=int(DB_CONFIG['port']),
@@ -1006,9 +1033,10 @@ def health_check():
             # Tentar conectar ao banco
             conn = get_db_connection()
             if conn:
-                cursor = conn.cursor()
-                cursor.execute("SELECT COUNT(*) FROM obrigacoes_com_data")
-                count = cursor.fetchone()[0]
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM obrigacoes_com_data")
+        result = cursor.fetchone()
+        count = result[0] if result else 0
                 conn.close()
                 return jsonify({
                     'status': 'healthy',
@@ -1049,7 +1077,7 @@ def get_states():
         if not conn:
             return jsonify({'error': 'Erro de conexão com banco'}), 500
         
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor()
         cursor.execute("""
             SELECT DISTINCT state as code
             FROM obrigacoes_com_data 
@@ -1059,6 +1087,10 @@ def get_states():
         
         results = cursor.fetchall()
         conn.close()
+        
+        # Converter para dicionário se necessário
+        if results and not isinstance(results[0], dict):
+            results = [{'code': row[0]} for row in results]
         
         state_names = {
             'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas', 'CA': 'California',
@@ -1091,7 +1123,7 @@ def get_counties(state_code):
         if not conn:
             return jsonify({'error': 'Erro de conexão com banco'}), 500
         
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor()
         cursor.execute("""
             SELECT DISTINCT county as name
             FROM obrigacoes_com_data 
@@ -1121,7 +1153,7 @@ def get_cities(state_code, county_name):
         if not conn:
             return jsonify({'error': 'Erro de conexão com banco'}), 500
         
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor()
         cursor.execute("""
             SELECT DISTINCT city as name
             FROM obrigacoes_com_data 
@@ -1156,7 +1188,7 @@ def search_locations():
         if not conn:
             return jsonify({'error': 'Erro de conexão com banco'}), 500
         
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor()
         
         # Busca em estados, condados e cidades
         cursor.execute("""
@@ -1168,11 +1200,11 @@ def search_locations():
                 NULL as city,
                 COUNT(*) as count
             FROM obrigacoes_com_data 
-            WHERE state ILIKE %s
+            WHERE LOWER(state) LIKE %s
             GROUP BY state
             ORDER BY state
             LIMIT 10
-        """, (f'%{query}%',))
+        """, (f"%{query.lower()}%",))
         
         states = cursor.fetchall()
         
@@ -1185,11 +1217,11 @@ def search_locations():
                 NULL as city,
                 COUNT(*) as count
             FROM obrigacoes_com_data 
-            WHERE county ILIKE %s AND county IS NOT NULL AND county != ''
+            WHERE county IS NOT NULL AND county != '' AND LOWER(county) LIKE %s
             GROUP BY state, county
             ORDER BY county
             LIMIT 10
-        """, (f'%{query}%',))
+        """, (f"%{query.lower()}%",))
         
         counties = cursor.fetchall()
         
@@ -1202,11 +1234,11 @@ def search_locations():
                 city as city,
                 COUNT(*) as count
             FROM obrigacoes_com_data 
-            WHERE city ILIKE %s AND city IS NOT NULL AND city != ''
+            WHERE city IS NOT NULL AND city != '' AND LOWER(city) LIKE %s
             GROUP BY state, county, city
             ORDER BY city
             LIMIT 10
-        """, (f'%{query}%',))
+        """, (f"%{query.lower()}%",))
         
         cities = cursor.fetchall()
         
