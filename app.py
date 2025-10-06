@@ -20,6 +20,11 @@ CORS(app)
 # Suporta MySQL (Railway) e fallback local
 import urllib.parse as urlparse
 DATABASE_URL = os.environ.get('DATABASE_URL')
+
+# FALLBACK: Se DATABASE_URL não funcionar, usar URL pública diretamente
+if not DATABASE_URL or 'mysql.railway.internal' in str(DATABASE_URL):
+    DATABASE_URL = 'mysql://root:kODqKBZBEYeYuYXYzwgVmvzqjGgHaxoE@shinkansen.proxy.rlwy.net:29062/railway'
+
 if DATABASE_URL:
     url = urlparse.urlparse(DATABASE_URL)
     DB_CONFIG = {
